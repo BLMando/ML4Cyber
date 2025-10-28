@@ -1,0 +1,34 @@
+# ===== CORE DATA SCIENCE =====
+pandas>=2.3.3          # Manipolazione e analisi dati strutturati (DataFrame)
+numpy>=2.3.4           # Calcoli numerici e array multidimensionali
+scipy>=1.16.2          # Funzioni scientifiche avanzate (statistica, ottimizzazione)
+
+# ===== MACHINE LEARNING =====
+scikit-learn>=1.7.2    # Algoritmi ML standard (classificazione, clustering, preprocessing)
+lazypredict>=0.2.16    # Benchmark automatico di modelli ML per selezione rapida
+xgboost>=3.1.1         # Gradient boosting ottimizzato per performance elevate
+lightgbm>=4.6.0        # Gradient boosting veloce per dataset grandi
+catboost>=1.2.8        # Gradient boosting con gestione automatica variabili categoriche
+
+# ===== TIME SERIES =====
+statsmodels>=0.14.5    # Modelli statistici e ARIMA per forecasting
+
+# ===== VISUALIZATION =====
+matplotlib>=3.10.7     # Libreria base per grafici statici
+seaborn>=0.13.2        # Grafici statistici avanzati con estetica migliorata
+
+# ===== JUPYTER =====
+jupyter>=1.1.1         # Ambiente notebook interattivo
+ipykernel>=7.1.0       # Kernel Python per Jupyter
+notebook>=7.4.7        # Interface web per notebook Jupyter
+
+# ===== PREPROCESSING =====
+imbalanced-learn>=0.14.0  # Gestione classi sbilanciate (SMOTE, undersampling)
+
+# ===== INTERPRETABILITY =====
+shap>=0.49.1           # Spiegabilità modelli ML (SHAP values, feature importance)
+
+# ===== UTILITIES =====
+tqdm>=4.64.0           # Progress bar per loop e operazioni lunghe
+joblib>=1.2.0          # Serializzazione modelli e parallelizzazione
+pyyaml>=6.0            # Lettura/scrittura file configurazione YAML
