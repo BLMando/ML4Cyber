@@ -1,0 +1,256 @@
+# ===== PROJECT METADATA =====
+project:
+  name: "CyberForecast"
+  version: "1.0.0"
+  description: "Analisi, Classificazione e Previsione delle Minacce Informatiche Globali (2015-2024)"
+  author: "Mandorlini Mattia, Sabatini Caterina, Bajrami Began, Spiga Matteo"
+  random_seed: 42
+
+# ===== DATA PATHS =====
+data:
+  raw_path: "data/raw/Global_Cybersecurity_Threats_2015-2024.csv"
+  processed_path: "data/processed/threats_processed.csv"
+  
+  # Train/Test Split
+  test_size: 0.2
+  validation_size: 0.1
+  stratify: true
+  shuffle: true
+
+# ===== DATASET COLUMNS =====
+columns:
+  numerical:
+    - "Financial Loss (in Million $)"
+    - "Number of Affected Users"
+    - "Incident Resolution Time (in Hours)"
+  
+  categorical:
+    - "Country"
+    - "Target Industry"
+    - "Attack Source"
+    - "Security Vulnerability Type"
+    - "Defense Mechanism Used"
+  
+  temporal:
+    - "Year"
+  
+  target: "Attack Type"
+
+# ===== PREPROCESSING =====
+preprocessing:
+  # Missing Values
+  handle_missing_numerical: "median"  # mean, median, mode, drop
+  handle_missing_categorical: "most_frequent"  # most_frequent, constant, drop
+  
+  # Scaling
+  scaling_method: "standard"  # standard, minmax, robust
+  
+  # Encoding
+  encoding_method: "onehot"  # onehot, label, target
+  onehot_drop: "first"  # first, if_binary, None
+  handle_unknown: "ignore"  # ignore, error
+  
+  # Outliers
+  remove_outliers: false
+  outlier_method: "iqr"  # iqr, zscore
+  outlier_threshold: 1.5  # IQR multiplier or Z-score threshold
+
+# ===== FEATURE ENGINEERING =====
+feature_engineering:
+  # Temporal Features
+  create_temporal_features: true
+  temporal_features:
+    - "Decade"
+    - "Years_Since_2015"
+    - "Period"
+    - "Attack_Frequency"
+  
+  # Financial Features
+  create_financial_features: true
+  financial_features:
+    - "Loss_Per_User"
+    - "Loss_Log"
+  
+  # Severity Features
+  create_severity_features: true
+  severity_features:
+    - "Severity_Score"
+  
+  # Aggregate Features
+  create_aggregate_features: true
+  aggregate_by:
+    - ["Country", "Year"]
+    - ["Target Industry", "Year"]
+
+# ===== CLASSIFICATION =====
+classification:
+  target_column: "Attack Type"
+  
+  # Cross-Validation
+  cv_folds: 5
+  cv_strategy: "kfold"  # stratified, kfold, timeseries
+  
+  # Optimization
+  optimization_metric: "f1_weighted"  # accuracy, f1_weighted, roc_auc
+  top_models_to_tune: 3
+  
+  # LazyPredict
+  lazypredict_verbose: 0
+  lazypredict_ignore_warnings: true
+  
+  # Hyperparameter Tuning
+  tuning_method: "grid"  # grid, random, bayesian
+  n_jobs: -1
+  verbose: 1
+
+# ===== CLUSTERING =====
+clustering:
+  # Algorithms
+  methods: ["kmeans", "dbscan"]
+  
+  # Dimensionality Reduction
+  apply_pca: true
+  pca_variance_threshold: 0.95
+  pca_n_components: null  # null = auto based on variance
+  
+  # K-Means
+  kmeans_range: [2, 10]
+  kmeans_init: "k-means++"
+  kmeans_n_init: 10
+  kmeans_max_iter: 300
+  
+  # DBSCAN
+  dbscan_eps: 0.5
+  dbscan_min_samples: 5
+  dbscan_metric: "euclidean"
+  
+  # Evaluation
+  silhouette_threshold: 0.5
+  calinski_threshold: 100
+  
+  # Visualization
+  visualization_method: "pca"  # pca, tsne, umap
+  tsne_perplexity: 30
+  umap_n_neighbors: 15
+
+# ===== FORECASTING =====
+forecasting:
+  # Time Series Configuration
+  frequency: "Y"  # Y=Yearly (annual data)
+  train_ratio: 0.8
+  forecast_horizon: 3  # years
+  
+  # Methods
+  methods: ["arima"]
+  
+  # ARIMA
+  arima:
+    order: [1, 1, 1]  # (p, d, q)
+    seasonal_order: [0, 0, 0, 0]  # (P, D, Q, s)
+    auto_arima: true
+    max_p: 5
+    max_d: 2
+    max_q: 5
+    seasonal: false
+  
+  # Evaluation Metrics
+  metrics:
+    - "MAE"
+    - "MSE"
+    - "RMSE"
+    - "MAPE"
+  
+  # Targets to Forecast
+  targets:
+    - "attack_count"
+    - "Financial Loss (in Million $)"
+    - "Number of Affected Users"
+
+# ===== VISUALIZATION =====
+visualization:
+  # Plot Configuration
+  style: "seaborn-v0_8-darkgrid"
+  palette: "husl"
+  context: "notebook"  # paper, notebook, talk, poster
+  
+  # Figure Settings
+  figsize: [12, 6]
+  dpi: 300
+  save_format: "png"  # png, pdf, svg, jpg
+  
+  # Font Sizes
+  title_fontsize: 16
+  label_fontsize: 12
+  tick_fontsize: 10
+  legend_fontsize: 10
+  
+  # Colors
+  color_palette: "Set2"
+  cmap_sequential: "viridis"
+  cmap_diverging: "coolwarm"
+  
+  # Interactive Plots (Plotly)
+  plotly_template: "plotly_white"
+  plotly_height: 500
+  plotly_width: null  # null = auto
+
+# ===== OUTPUT PATHS =====
+output:
+  figures_path: "results/figures/"
+  models_path: "results/models/"
+  reports_path: "results/reports/"
+  logs_path: "logs/"
+  
+  # Model Serialization
+  model_format: "pkl"  # pkl, joblib, h5
+  save_preprocessors: true
+  save_metadata: true
+
+# ===== LOGGING =====
+logging:
+  level: "INFO"  # DEBUG, INFO, WARNING, ERROR, CRITICAL
+  format: "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+  datefmt: "%Y-%m-%d %H:%M:%S"
+  
+# ===== PERFORMANCE =====
+performance:
+  n_jobs: -1  # -1 = use all cores
+
+# ===== REPRODUCIBILITY =====
+reproducibility:
+  random_seed: 42
+  deterministic: true
+  set_global_seed: true
+  
+  # Environment
+  save_environment: true
+  environment_file: "environment.yml"
+
+# ===== NOTEBOOK CONFIGURATION =====
+notebook:
+  # Display Settings
+  max_columns: null  # null = show all
+  max_rows: 100
+  precision: 2
+  
+  # Warnings
+  filter_warnings: true
+  
+  # Progress Bars
+  show_progress: true
+  progress_bar_style: "tqdm"
+
+# ===== ADVANCED SETTINGS =====
+advanced:
+
+  # Imbalanced Data
+  handle_imbalance: false
+  imbalance_method: "smote"  # smote, adasyn, random_oversample
+  
+  # Ensemble Methods
+  use_ensemble: false
+  ensemble_method: "voting"  # voting, stacking, bagging
+  
+  # Interpretability
+  compute_shap: false
+  shap_sample_size: 100
