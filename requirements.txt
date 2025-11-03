@@ -3,6 +3,7 @@ pandas>=2.3.3          # Manipolazione e analisi dati strutturati (DataFrame)
 numpy>=2.3.4           # Calcoli numerici e array multidimensionali
 scipy>=1.16.2          # Funzioni scientifiche avanzate (statistica, ottimizzazione)
 
+
 # ===== MACHINE LEARNING =====
 scikit-learn>=1.7.2    # Algoritmi ML standard (classificazione, clustering, preprocessing)
 lazypredict>=0.2.16    # Benchmark automatico di modelli ML per selezione rapida
@@ -16,6 +17,7 @@ statsmodels>=0.14.5    # Modelli statistici e ARIMA per forecasting
 # ===== VISUALIZATION =====
 matplotlib>=3.10.7     # Libreria base per grafici statici
 seaborn>=0.13.2        # Grafici statistici avanzati con estetica migliorata
+cartopy>=0.24.2        # Analisi spaziale e operazioni geografiche
 
 # ===== JUPYTER =====
 jupyter>=1.1.1         # Ambiente notebook interattivo
