@@ -2,6 +2,7 @@
 pandas>=2.3.3          # Manipolazione e analisi dati strutturati (DataFrame)
 numpy>=2.3.4           # Calcoli numerici e array multidimensionali
 scipy>=1.16.2          # Funzioni scientifiche avanzate (statistica, ottimizzazione)
+cartopy>=0.24.2        # Analisi spaziale e operazioni geografiche
 
 # ===== MACHINE LEARNING =====
 scikit-learn>=1.7.2    # Algoritmi ML standard (classificazione, clustering, preprocessing)
