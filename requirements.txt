@@ -7,9 +7,6 @@ scipy>=1.16.2          # Funzioni scientifiche avanzate (statistica, ottimizzazi
 # ===== MACHINE LEARNING =====
 scikit-learn>=1.7.2    # Algoritmi ML standard (classificazione, clustering, preprocessing)
 lazypredict>=0.2.16    # Benchmark automatico di modelli ML per selezione rapida
-xgboost>=3.1.1         # Gradient boosting ottimizzato per performance elevate
-lightgbm>=4.6.0        # Gradient boosting veloce per dataset grandi
-catboost>=1.2.8        # Gradient boosting con gestione automatica variabili categoriche
 
 # ===== TIME SERIES =====
 statsmodels>=0.14.5    # Modelli statistici e ARIMA per forecasting
@@ -29,8 +26,3 @@ imbalanced-learn>=0.14.0  # Gestione classi sbilanciate (SMOTE, undersampling)
 
 # ===== INTERPRETABILITY =====
 shap>=0.49.1           # Spiegabilità modelli ML (SHAP values, feature importance)
-
-# ===== UTILITIES =====
-tqdm>=4.64.0           # Progress bar per loop e operazioni lunghe
-joblib>=1.2.0          # Serializzazione modelli e parallelizzazione
-pyyaml>=6.0            # Lettura/scrittura file configurazione YAML
