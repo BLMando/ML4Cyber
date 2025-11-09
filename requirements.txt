@@ -15,6 +15,7 @@ statsmodels>=0.14.5    # Modelli statistici e ARIMA per forecasting
 matplotlib>=3.10.7     # Libreria base per grafici statici
 seaborn>=0.13.2        # Grafici statistici avanzati con estetica migliorata
 cartopy>=0.24.2        # Analisi spaziale e operazioni geografiche
+tqdm>=4.64.0           # Progress bar per loop e operazioni lunghe
 
 # ===== JUPYTER =====
 jupyter>=1.1.1         # Ambiente notebook interattivo
