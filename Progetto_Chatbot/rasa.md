@@ -1,1 +1,0 @@
-Seguire installazione del framework Rasa
