@@ -8,9 +8,9 @@
 #       format_version: '1.3'
 #       jupytext_version: 1.18.1
 #   kernelspec:
-#     display_name: Venv
+#     display_name: data
 #     language: python
-#     name: venv
+#     name: data
 # ---
 
 # %% [markdown]
@@ -25,13 +25,12 @@ from dateutil import parser
 from dateutil.parser._parser import UnknownTimezoneWarning
 from email_validator import validate_email, EmailNotValidError
 from pathlib import Path
-from inflect import Word
 from typing import cast
-from pattern import singularize
 import matplotlib.pyplot as plt
 import networkx as nx
 import pandas as pd
 import re
+from tqdm import tqdm
 import warnings
 import time
 
@@ -51,7 +50,7 @@ session_id = "010101010101"  # placeholder
 # %% [markdown]
 # ## Preprocessamento
 
-# %% jupyter={"source_hidden": true}
+# %%
 # ed eseguiamo le operazioni preliminari di caricamento dei dati
 
 # leggi il file come edge-list: ignora righe che iniziano con '#' e usa whitespace come separatore
@@ -73,19 +72,13 @@ del cit_hepth
 # %%
 
 
-def normalize_email(email: str, counter=None):
-    """
-    Normalize email if it is a valid email, else, return None
-    """
-    try:
-        validated = validate_email(email, check_deliverability=False)
-        return validated.normalized
-    except EmailNotValidError:
-        if counter:
-            counter = counter + 1
-        print(f"{email} is not valid")
+def normalize_email(email_str):
+    if not email_str:
         return None
-
+    match = re.search(r'[\w\.-]+@[\w\.-]+', email_str)
+    if match:
+        return match.group(0).lower()
+    return None
 
 def extract_journal_ref(text: str):
     """
@@ -141,7 +134,7 @@ def extract_fields(text: str):
 
     data: dict[str, object] = {
         "paper": None,
-        "email": None,
+        "from": None,
         "date_published": None,
         "date_revised": None,
         "title": None,
@@ -156,28 +149,26 @@ def extract_fields(text: str):
     for line in text.splitlines():
         line = line.lower().strip()
         tag, _, content = line.partition(":")
-        tag = cast(Word, tag)
-        tag = singularize(tag)
         if tag in keys:
             match tag:
-                case "paper":
-                    data["paper"] = content.strip()
+                # case "paper":
+                #     data["paper"] = content.strip()
                 case "from":
-                    data["email"] = normalize_email(content.strip())
-                case "date":
-                    dp, dr = extract_date_fields(content.strip())
-                    if dp:
-                        data["date_published"] = parser.parse(dp)
-                    if dr:
-                        data["date_revised"] = parser.parse(dr)
-                case "title":
-                    data["title"] = content.strip()
-                case "author":
-                    data["authors"] = content.strip()
-                case "comment":
-                    data["pages"] = extract_pages(content.strip())
-                case "journal_ref":
-                    data["journal_ref"] = extract_journal_ref(content.strip())
+                    data["from"] = normalize_email(content.strip())
+                # case "date":
+                #     dp, dr = extract_date_fields(content.strip())
+                #     if dp:
+                #         data["date_published"] = parser.parse(dp)
+                #     if dr:
+                #         data["date_revised"] = parser.parse(dr)
+                # case "title":
+                #     data["title"] = content.strip()
+                # case "author":
+                #     data["authors"] = content.strip()
+                # case "comment":
+                #     data["pages"] = extract_pages(content.strip())
+                # case "journal_ref":
+                #     data["journal_ref"] = extract_journal_ref(content.strip())
                 case _:
                     continue
 
@@ -189,23 +180,33 @@ def extract_fields(text: str):
 # %% jupyter={"source_hidden": false}
 #
 records = []
-for abstractsp in Path("data/cit-HepTh-abstracts").rglob("*"):
+paths = Path("data/cit-HepTh-abstracts").rglob("*")
+for abstractsp in tqdm(paths):
     if abstractsp.is_file():
         with open(abstractsp, "r", encoding="utf-8", errors="ignore") as f:
             abstract = f.read()
 
         data = {"id": abstractsp.stem}
         fields = extract_fields(abstract)
-        records.append(data)
+        if isinstance(fields, dict):
+            data.update(fields)
+            records.append(data)
 
 papers = pd.DataFrame(records)
-del records
+
+# %%
+esegui questo blocco per salvare il preprocessamento
+
+# %%
+papers.to_csv(f"data/papers-{session_id}.csv", index=False)
 
 # %% [markdown]
-# esegui questo blocco per salvare il preprocessamento
-# papers.to_csv(f"data/preproc/papers.csv", index=False)
-#
 # Non è necessario rieseguire tutto quanto da capo.
+
+# %%
+papers
+
+# %%
 
 # %% [markdown]
 # Mapping dei paper alle rispettive università
@@ -233,7 +234,7 @@ def extract_domain(email):
         lambda d: isinstance(d, str) and d.lower() in domain
     )
     mask = cond_a | cond_b
-    uni_match = universities.loc[mask, "name"]
+    uni_match = universities.loc[mask, "name", "country"]
 
     if not uni_match.empty:
         return uni_match.iloc[0]
@@ -242,15 +243,16 @@ def extract_domain(email):
     if m:
         tld2 = m.group(1)
         if tld2 in ror.tld2.values:
-            m = ror.loc[ror["tld2"].eq(tld2), "name"]
+            m = ror.loc[ror["tld2"].eq(tld2), "name", "country.country_code"]
             return m.iat[0] if not m.empty else None
 
     return None
 
 
 # %%
-domain_mapping = {str(row.id): extract_domain(row.email) for row in df.itertuples()}
+domain_mapping = {str(row.id): extract_domain(row.from) for row in df.itertuples()}
 
+# %%
 ror = pd.read_csv("./data/v1.73-2025-10-28-ror-data.csv")
 ror["clean_url"] = (
     ror["links"].str.replace(r"^https?://", "", regex=True).str.split("/").str[0]
