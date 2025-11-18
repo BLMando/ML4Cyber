@@ -1,20 +1,18 @@
 
 
 
-
 # Importiamo tutte le dipendenze
 
 from dateutil import parser
 from dateutil.parser._parser import UnknownTimezoneWarning
 from email_validator import validate_email, EmailNotValidError
 from pathlib import Path
-from inflect import Word
 from typing import cast
-from pattern.en import singularize
 import matplotlib.pyplot as plt
 import networkx as nx
 import pandas as pd
 import re
+from tqdm.notebook import tqdm
 import warnings
 import time
 
@@ -27,7 +25,7 @@ warnings.filterwarnings("ignore")
 session_id = str(time.time())
 
 
-session_id = "010101010101"  # placeholder
+session_id = "1763462545.6000104"  # placeholder
 
 
 
@@ -54,19 +52,13 @@ del cit_hepth
 
 
 
-def normalize_email(email: str, counter=None):
-    """
-    Normalize email if it is a valid email, else, return None
-    """
-    try:
-        validated = validate_email(email, check_deliverability=False)
-        return validated.normalized
-    except EmailNotValidError:
-        if counter:
-            counter = counter + 1
-        print(f"{email} is not valid")
+def normalize_email(email_str):
+    if not email_str:
         return None
-
+    match = re.search(r'[\w\.-]+@[\w\.-]+', email_str)
+    if match:
+        return match.group(0).lower()
+    return None
 
 def extract_journal_ref(text: str):
     """
@@ -121,15 +113,7 @@ def extract_fields(text: str):
     """
 
     data: dict[str, object] = {
-        "paper": None,
         "email": None,
-        "date_published": None,
-        "date_revised": None,
-        "title": None,
-        "authors": None,
-        "pages": None,
-        "subj_class": None,
-        "journal_ref": None,
     }
 
     keys = data.keys()
@@ -137,30 +121,8 @@ def extract_fields(text: str):
     for line in text.splitlines():
         line = line.lower().strip()
         tag, _, content = line.partition(":")
-        tag = cast(Word, tag)
-        tag = singularize(tag)
-        if tag in keys:
-            match tag:
-                case "paper":
-                    data["paper"] = content.strip()
-                case "from":
-                    data["email"] = normalize_email(content.strip())
-                case "date":
-                    dp, dr = extract_date_fields(content.strip())
-                    if dp:
-                        data["date_published"] = parser.parse(dp)
-                    if dr:
-                        data["date_revised"] = parser.parse(dr)
-                case "title":
-                    data["title"] = content.strip()
-                case "author":
-                    data["authors"] = content.strip()
-                case "comment":
-                    data["pages"] = extract_pages(content.strip())
-                case "journal_ref":
-                    data["journal_ref"] = extract_journal_ref(content.strip())
-                case _:
-                    continue
+        if tag == "from":
+            data["email"] = normalize_email(content.strip())
 
     return data
 
@@ -170,17 +132,34 @@ def extract_fields(text: str):
 
 #
 records = []
-for abstractsp in Path("data/cit-HepTh-abstracts").rglob("*"):
+paths = Path("data/cit-HepTh-abstracts").rglob("*")
+for abstractsp in tqdm(paths):
     if abstractsp.is_file():
         with open(abstractsp, "r", encoding="utf-8", errors="ignore") as f:
             abstract = f.read()
 
         data = {"id": abstractsp.stem}
         fields = extract_fields(abstract)
-        records.append(data)
+        if isinstance(fields, dict):
+            data.update(fields)
+            records.append(data)
 
 papers = pd.DataFrame(records)
-del records
+
+
+esegui questo blocco per salvare il preprocessamento
+
+
+papers.to_csv(f"data/papers-{session_id}.csv", index=False)
+
+
+papers = pd.read_csv(f"data/papers-{session_id}.csv")
+
+
+
+
+
+papers
 
 
 
@@ -197,7 +176,6 @@ ror["tld2"] = ror["clean_url"].str.extract(r"([a-zA-Z0-9-]+\.[a-zA-Z0-9-]+)$")
 # ror = ror[["name", "tld2"]]
 
 df = papers.copy()
-
 
 def extract_domain(email):
     if not isinstance(email, str):
@@ -206,49 +184,104 @@ def extract_domain(email):
         return None
 
     domain = email.split("@", 1)[1].lower()
+
+    # LIKE-style match contro all_universities.csv
     cond_a = universities["domains"].str.contains(domain, case=False, na=False)
     cond_b = universities["domains"].apply(
         lambda d: isinstance(d, str) and d.lower() in domain
     )
     mask = cond_a | cond_b
-    uni_match = universities.loc[mask, "name"]
+
+    # restituisco SOLO name e country
+    uni_match = universities.loc[mask, ["name", "alpha_two_code"]]
 
     if not uni_match.empty:
-        return uni_match.iloc[0]
+        row = uni_match.iloc[0]
+        return {
+            "name": row["name"],
+            "country": row["alpha_two_code"]
+        }
 
+    # FALLBACK: ROR via TLD2
     m = re.search(r"([a-zA-Z0-9-]+\.[a-zA-Z0-9-]+)$", domain)
     if m:
         tld2 = m.group(1)
-        if tld2 in ror.tld2.values:
-            m = ror.loc[ror["tld2"].eq(tld2), "name"]
-            return m.iat[0] if not m.empty else None
+        ror_match = ror.loc[
+            ror["tld2"].eq(tld2),
+            ["name", "country.country_code"]
+        ]
+
+        if not ror_match.empty:
+            row = ror_match.iloc[0]
+            return {
+                "name": row["name"],
+                "country": row["country.country_code"]
+            }
 
     return None
 
 
-domain_mapping = {str(row.id): extract_domain(row.email) for row in df.itertuples()}
+for i in df.itertuples():
+    print(i)
+    time.sleep(2)
+
+
+extract_domain("dbernard@spht.saclay.cea.fr")
+
+
+domain_mapping = {
+    str(row.id): extract_domain(row.email)
+    for row in tqdm(df.itertuples())
+}
+
+
+domain_mapping["0208160"]
+
 
 ror = pd.read_csv("./data/v1.73-2025-10-28-ror-data.csv")
-ror["clean_url"] = (
-    ror["links"].str.replace(r"^https?://", "", regex=True).str.split("/").str[0]
-)
+ror["clean_url"] = ror["links"].str.replace(r"^https?://", "", regex=True).str.split("/").str[0]
 ror["tld2"] = ror["clean_url"].str.extract(r"([a-zA-Z0-9-]+\.[a-zA-Z0-9-]+)$")
-# ror = ror[["name", "tld2"]]
 
-df = papers.copy()
+
 citations = pd.read_csv("./data/citations.csv")
 
-# Potremmo salvare il risultato invece che rifarlo ogni volta
-citations["source"] = (
-    citations["source"].astype(str).map(lambda x: domain_mapping.get(x, None))
-)
-citations["target"] = (
-    citations["target"].astype(str).map(lambda x: domain_mapping.get(x, None))
-)
-citations.to_csv("data/citations-pp.csv", index=False)
+citations_uni = citations.copy()
+citations_country = citations.copy()
 
 
-citations = pd.read_csv("data/citations-pp.csv")
+def safe_get_name(x):
+    v = domain_mapping.get(x)
+    if isinstance(v, dict):
+        return v.get("name")
+    return None
+
+def safe_get_country(x):
+    v = domain_mapping.get(x)
+    if isinstance(v, dict):
+        return v.get("country")
+    return None
+
+citations_uni["source"] = citations["source"].astype(str).map(safe_get_name)
+citations_uni["target"] = citations["target"].astype(str).map(safe_get_name)
+
+citations_country["source"] = citations["source"].astype(str).map(safe_get_country)
+citations_country["target"] = citations["target"].astype(str).map(safe_get_country)
+
+
+citations_uni.dropna().sample(n=3)
+
+
+citations_country.dropna().sample(n=3)
+
+
+citations_uni.to_csv(f"data/citations-uni-{session_id}.csv", index=False)
+citations_country.to_csv(f"data/citations-country-{session_id}.csv", index=False)
+
+
+citations = citations.dropna()
+
+
+citations = pd.read_csv(f"data/citations-{session_id}.csv")
 papers = pd.read_csv("data/papers.csv")
 universities = pd.read_csv("./data/all_universities.csv")
 
@@ -256,55 +289,98 @@ universities = pd.read_csv("./data/all_universities.csv")
 
 
 
-G = nx.DiGraph()
+G_uni = nx.DiGraph()
 
-for _, row in citations.iterrows():
+for _, row in citations_uni.dropna().iterrows():
     src = row["source"]
     tgt = row["target"]
-    if pd.isna(src) or pd.isna(tgt):
-        continue
-    G.add_edge(src, tgt)
+    G_uni.add_edge(src, tgt)
+
+
+G_country = nx.DiGraph()
+
+for _, row in citations_country.dropna().iterrows():
+    src = row["source"]
+    tgt = row["target"]
+    G_country.add_edge(src, tgt)
 
 
 
 
 
-plt.figure(figsize=(76.8, 43.2), dpi=100)
-
-pos = nx.kamada_kawai_layout(G)
-
-degrees = dict(G.degree())
-node_sizes = [80 + degrees[n] * 10 for n in G.nodes()]
-node_colors = [degrees[n] for n in G.nodes()]
-
-
-nodes = nx.draw_networkx_nodes(
+def gen_graph(
     G,
-    pos,
-    node_size=node_sizes,
-    node_color=node_colors,
+    layout="kamada_kawai",
+    figsize=(76.8, 43.2),
+    dpi=100,
     cmap="viridis",
-    alpha=0.85,
-    linewidths=0.5,
-    edgecolors="black",
-)
+    save_path="graph.png",
+    show_labels=True,
+    title=None,
+):
+    plt.figure(figsize=figsize, dpi=dpi)
+
+    # layout dinamico
+    layout_func = {
+        "kamada_kawai": nx.kamada_kawai_layout,
+        "spring": nx.spring_layout,
+        "circular": nx.circular_layout,
+        "shell": nx.shell_layout,
+        "spectral": nx.spectral_layout,
+    }.get(layout, nx.kamada_kawai_layout)
+    
+    pos = layout_func(G)
+    
+    # nodi
+    degrees = dict(G.degree())
+    node_sizes = [80 + degrees[n] * 10 for n in G.nodes()]
+    node_colors = [degrees[n] for n in G.nodes()]
+
+    nodes = nx.draw_networkx_nodes(
+        G,
+        pos,
+        node_size=node_sizes,
+        node_color=node_colors,
+        cmap=cmap,
+        alpha=0.85,
+        linewidths=0.5,
+        edgecolors="black",
+    )
+
+    # archi
+    nx.draw_networkx_edges(
+        G,
+        pos,
+        arrowstyle="-|>",
+        arrowsize=10,
+        edge_color="gray",
+        alpha=0.3,
+        width=0.8,
+    )
+
+    # etichette opzionali
+    if show_labels:
+        nx.draw_networkx_labels(G, pos, font_size=7, font_color="black")
+
+    # colorbar e titolo
+    cbar = plt.colorbar(nodes)
+    cbar.set_label("Node degree")
+    if title:
+        plt.title(title)
+
+    plt.axis("off")
+    plt.tight_layout()
+
+    if save_path:
+        plt.savefig(save_path, dpi=dpi, bbox_inches="tight")
+
+    plt.show()
 
 
-nx.draw_networkx_edges(
-    G, pos, arrowstyle="-|>", arrowsize=10, edge_color="gray", alpha=0.3, width=0.8
-)
+gen_graph(G_uni)
 
 
-nx.draw_networkx_labels(G, pos, font_size=7, font_color="black")
-
-
-cbar = plt.colorbar(nodes)
-cbar.set_label("Node degree")
-
-plt.axis("off")
-plt.tight_layout()
-plt.savefig("graph_2.png", dpi=100, bbox_inches="tight")
-plt.show()
+gen_graph(G_country)
 
 
 
