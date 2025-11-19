@@ -1,23 +1,6 @@
-# ---
-# jupyter:
-#   jupytext:
-#     formats: ipynb,py:percent
-#     text_representation:
-#       extension: .py
-#       format_name: percent
-#       format_version: '1.3'
-#       jupytext_version: 1.18.1
-#   kernelspec:
-#     display_name: Python (data env)
-#     language: python
-#     name: data
-# ---
 
-# %% [markdown]
-# # Analisi della social network tra istituti di ricerca e università.
-# L'obiettivo di questa analisi è quella di individuare se, all'interno della comunità scientifica, esistano
-# dei gruppi naturali (comunità) tra i diversi istituti di ricerca nel campo della Energia.
-# %%
+
+
 # Importiamo tutte le dipendenze
 
 from utils import FigSize, preproc
@@ -34,21 +17,19 @@ import time
 
 warnings.filterwarnings("ignore")
 
-# %% [markdown]
-# Questa linea genera la session_id. Se la sovrascrivi si intende che hai fatto cambiamenti al dataset
-# perciò il resto del codice non farà più affidamento alla sessione precedente e quindi alcuni file
-# vanno rigenerati
-#
-# Se invece vuoi usare una session precedente, usa il blocco sotto e definisci manualmente il numero di sessione
-#
-# %% jupyter={"source_hidden": false}
-session_id = str(time.time())
-# %% jupyter={"source_hidden": false}
-session_id = "1763493272.2638242"  # placeholder
-# %% [markdown]
-# ## Preprocessamento
 
-# %%
+
+
+
+session_id = str(time.time())
+
+
+session_id = "1763493272.2638242"  # placeholder
+
+
+
+
+
 # ed eseguiamo le operazioni preliminari di caricamento dei dati
 
 # leggi il file come edge-list: ignora righe che iniziano con '#' e usa whitespace come separatore
@@ -65,10 +46,9 @@ citations["target"] = pd.to_numeric(citations["target"])
 del cit_hepth
 
 
-# %% [markdown]
-# qui effettuiamo il preprocessamento
-# le funzioni di preprocaessamento sono scritte nel modulo utils.py
-# %% jupyter={"source_hidden": false}
+
+
+
 records = []
 paths = Path("data/cit-HepTh-abstracts").rglob("*")
 for abstractsp in tqdm(paths):
@@ -84,27 +64,29 @@ for abstractsp in tqdm(paths):
 
 papers = pd.DataFrame(records)
 
-# %% [markdown]
-# esegui questo blocco per salvare il preprocessamento
-# %%
+
+
+
+
 
 papers.to_csv(f"data/papers-{session_id}.csv", index=False)
 
-# %%
+
 papers = pd.read_csv(f"data/papers-{session_id}.csv")
 
-# %% [markdown]
-# Non è necessario rieseguire tutto quanto da capo.
 
-# %%
+
+
+
 papers
 
-# %%
 
-# %% [markdown]
-# Mapping dei paper alle rispettive università
 
-# %%
+
+
+
+
+
 ror = pd.read_csv("./data/v1.73-2025-10-28-ror-data.csv")
 ror["clean_url"] = (
     ror["links"].str.replace(r"^https?://", "", regex=True).str.split("/").str[0]
@@ -150,30 +132,29 @@ def extract_domain(email):
     return None
 
 
-# %% jupyter={"outputs_hidden": true, "source_hidden": true}
 for i in df.itertuples():
     print(i)
     time.sleep(2)
 
-# %%
+
 extract_domain("dbernard@spht.saclay.cea.fr")
 
-# %%
+
 domain_mapping = {
     str(row.id): extract_domain(row.email) for row in tqdm(df.itertuples())
 }
 
-# %%
+
 domain_mapping["0208160"]
 
-# %%
+
 ror = pd.read_csv("./data/v1.73-2025-10-28-ror-data.csv")
 ror["clean_url"] = (
     ror["links"].str.replace(r"^https?://", "", regex=True).str.split("/").str[0]
 )
 ror["tld2"] = ror["clean_url"].str.extract(r"([a-zA-Z0-9-]+\.[a-zA-Z0-9-]+)$")
 
-# %%
+
 citations = pd.read_csv("./data/citations.csv")
 
 citations_uni = citations.copy()
@@ -201,29 +182,28 @@ citations_country["source"] = citations["source"].astype(str).map(safe_get_count
 citations_country["target"] = citations["target"].astype(str).map(safe_get_country)
 
 
-# %%
 citations_uni.dropna().sample(n=3)
 
-# %%
+
 citations_country.dropna().sample(n=3)
 
-# %%
+
 citations_uni.to_csv(f"data/citations-uni-{session_id}.csv", index=False)
 citations_country.to_csv(f"data/citations-country-{session_id}.csv", index=False)
 
-# %%
+
 citations_uni = pd.read_csv(f"data/citations-uni-{session_id}.csv")
 citations_country = pd.read_csv(f"data/citations-country-{session_id}.csv")
 
-# %%
+
 citations = pd.read_csv(f"data/citations-{session_id}.csv")
 papers = pd.read_csv("data/papers.csv")
 universities = pd.read_csv("./data/all_universities.csv")
 
-# %% [markdown]
-# Preparazione del grafo
 
-# %%
+
+
+
 G_uni = nx.DiGraph()
 
 for _, row in citations_uni.dropna().iterrows():
@@ -231,7 +211,7 @@ for _, row in citations_uni.dropna().iterrows():
     tgt = row["target"]
     G_uni.add_edge(src, tgt)
 
-# %%
+
 G_country = nx.DiGraph()
 
 for _, row in citations_country.dropna().iterrows():
@@ -240,9 +220,9 @@ for _, row in citations_country.dropna().iterrows():
     G_country.add_edge(src, tgt)
 
 
-# %% [markdown]
-# Visualizzazione del grafo
-# %%
+
+
+
 class GLAYOUTS(Enum):
     kamada: Callable = nx.kamada_kawai_layout
     spring: Callable = nx.spring_layout
@@ -314,8 +294,7 @@ def gen_graph(
     plt.show()
 
 
-# %%
 gen_graph(G_uni, figsize=FigSize.XE16_9)
 
-# %%
+
 gen_graph(G_country, figsize=FigSize.XL16_9)
