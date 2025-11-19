@@ -1,5 +1,14 @@
 from enum import Enum
+from typing import Callable
 import re
+import networkx as nx
+import matplotlib.pyplot as plt
+import random
+import string
+
+
+def rand_string(n):
+    return "".join(random.choices(string.ascii_letters + string.digits, k=n))
 
 
 def _to_inch(n, dpi=300) -> float:
@@ -125,7 +134,7 @@ class preproc:
         return data
 
     @staticmethod
-    def extract_domain(email):
+    def extract_domain(email, ror, universities):
         if not isinstance(email, str):
             return None
         if "@" not in email:
@@ -158,3 +167,74 @@ class preproc:
                 return {"name": row["name"], "country": row["country.country_code"]}
 
         return None
+
+
+class GLAYOUTS(Enum):
+    kamada: Callable = nx.kamada_kawai_layout
+    spring: Callable = nx.spring_layout
+    circular: Callable = nx.circular_layout
+    shell: Callable = nx.shell_layout
+    spectral: Callable = nx.spectral_layout
+
+
+def gen_graph(
+    G,
+    layout=GLAYOUTS.kamada,
+    figsize: FigSize = FigSize.M1_1,
+    dpi=100,
+    cmap="viridis",
+    save_path="graph.png",
+    show_labels=True,
+    title=None,
+):
+    plt.figure(figsize=figsize.value, dpi=FigSize.DPI.value)
+    pos = layout(G)
+
+    degrees = dict(G.degree())
+    # ci permette di ottenere un dizionario dei degrees
+
+    node_sizes = [80 + degrees[n] * 10 for n in G.nodes()]
+    # definisce la grandezza di un nodo in base al valore del degree
+
+    node_colors = [degrees[n] for n in G.nodes()]
+    # evidentemente anche il colore
+
+    nodes = nx.draw_networkx_nodes(
+        G,
+        pos,
+        node_size=node_sizes,
+        node_color=node_colors,
+        cmap=cmap,
+        alpha=0.85,
+        linewidths=0.5,
+        edgecolors="black",
+    )
+
+    # archi
+    nx.draw_networkx_edges(
+        G,
+        pos,
+        arrowstyle="-|>",
+        arrowsize=10,
+        edge_color="gray",
+        alpha=0.3,
+        width=0.8,
+    )
+
+    # etichette opzionali
+    if show_labels:
+        nx.draw_networkx_labels(G, pos, font_size=7, font_color="black")
+
+    # colorbar e titolo
+    cbar = plt.colorbar(nodes)
+    cbar.set_label("Node degree")
+    if title:
+        plt.title(title)
+
+    plt.axis("off")
+    plt.tight_layout()
+
+    if save_path:
+        plt.savefig(save_path, dpi=dpi, bbox_inches="tight")
+
+    plt.show()
