@@ -19,15 +19,18 @@
 # dei gruppi naturali (comunità) tra i diversi istituti di ricerca nel campo della Energia.
 # %%
 # Importiamo tutte le dipendenze
+#
 
-from utils import FigSize, preproc
-from pathlib import Path
-import networkx as nx
-import pandas as pd
-from tqdm.notebook import tqdm
-import warnings
-import os
 from datetime import datetime
+from pathlib import Path
+from tqdm.notebook import tqdm
+from utils.figsize import FigSize
+import utils.graphing as graphing
+import networkx as nx
+import os
+import pandas as pd
+import utils.preproc as preproc
+import warnings
 
 
 CITATIONS_DIRECTED_GRAPH = "./data/cit-HepTh.txt"
@@ -47,6 +50,7 @@ warnings.filterwarnings("ignore")
 #
 # %% jupyter={"source_hidden": false}
 
+
 s = datetime.now().strftime("%y%m%d%H%M")
 session_id = f"{s}"  # NUOVA SESSIONE
 SESSION_PATH = f"data/sessions/{session_id}"
@@ -54,7 +58,7 @@ os.makedirs(SESSION_PATH, exist_ok=True)
 
 # %% jupyter={"source_hidden": false}
 
-session_id = ""  # RICARICA UNA SESSIONE
+session_id = "FL9QjSJe-25111938"  # RICARICA UNA SESSIONE
 SESSION_PATH = f"data/sessions/{session_id}"
 
 # %% [markdown]
@@ -175,7 +179,25 @@ for _, row in citations_uni.dropna().iterrows():
     src = row["source"]
     tgt = row["target"]
     G_uni.add_edge(src, tgt)
+# %%
+communities = nx.algorithms.community.louvain_communities(G_uni)
+print(communities)
+# %%
+comm_map = {}
+for i, cset in enumerate(communities):
+    for n in cset:
+        comm_map[n] = i
 
+H = nx.DiGraph()
+for u, v in G_uni.edges():
+    w = 1
+    if G_uni.has_edge(v, u):
+        w = 2
+    H.add_edge(u, v, weight=w)
+
+pos = nx.spring_layout(H, weight="weight", iterations=300)
+data = graphing.gen_default(H, pos)
+graphing.plot_graph(data, figsize=FigSize.XE16_9)
 # %%
 G_country = nx.DiGraph()
 
@@ -188,10 +210,3 @@ for _, row in citations_country.dropna().iterrows():
 # %% [markdown]
 # Visualizzazione del grafo
 # %%
-
-
-# %%
-gen_graph(G_uni, figsize=FigSize.XE16_9)
-
-# %%
-gen_graph(G_country, figsize=FigSize.XL16_9)
