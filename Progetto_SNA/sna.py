@@ -22,9 +22,10 @@
 
 from dateutil import parser
 from dateutil.parser._parser import UnknownTimezoneWarning
-from email_validator import validate_email, EmailNotValidError
+from Progetto_SNA.utils import FigSize, preproc
 from pathlib import Path
-from typing import cast
+from typing import Callable, cast
+from enum import Enum
 import matplotlib.pyplot as plt
 import networkx as nx
 import pandas as pd
@@ -65,91 +66,13 @@ citations["target"] = pd.to_numeric(citations["target"])
 
 del cit_hepth
 
-# %% [markdown]
-# esegui questo blocco per caricare le funzioni di preprocessamento dei dataset
-#
-# %%
-
-
-def normalize_email(email_str):
-    if not email_str:
-        return None
-    match = re.search(r'[\w\.-]+@[\w\.-]+', email_str)
-    if match:
-        return match.group(0).lower()
-    return None
-
-def extract_journal_ref(text: str):
-    """
-    Extract Journal-ref from Abstract text
-    """
-    journalref = re.search(r"^\s*Journal[- ]ref\s*:\s*(.+)", text, re.I | re.MULTILINE)
-    if journalref:
-        return journalref.group(1).strip()
-    return None
-
-
-def extract_pages(comment_str: str):
-    """
-    Extract page number from an abstract comment string.
-    Returns an int or None.
-    """
-    match = re.search(
-        r"(?i)(\b(?:p{1,2}|pages?)\.?\s*(\d+)\b|\b(\d+)\s*(?:p{1,2}|pages?)\.?\b)",
-        comment_str,
-    )
-    if match:
-        # groups: match.group(2) OR match.group(3) contains the number
-        return int(match.group(2) or match.group(3))
-    return None
-
-
-def extract_date_fields(text):
-    """
-    Extract pubblication dates and revision
-    """
-    date_publish = None
-    date_revised = None
-
-    # Date originale
-    match = re.search(r"^Date:\s*(.+?)(?:\s+\(\d+kb\))?$", text, re.MULTILINE)
-    if match:
-        date_publish = match.group(1).strip()
-
-    # Date revised (es. 'Date (revised v2): ...')
-    match_rev = re.search(
-        r"^Date\s*\(revised.*?\):\s*(.+?)(?:\s+\(\d+kb\))?$", text, re.MULTILINE
-    )
-    if match_rev:
-        date_revised = match_rev.group(1).strip()
-
-    return date_publish, date_revised
-
-
-def extract_fields(text: str):
-    """
-    Extract fields from abstract
-    """
-
-    data: dict[str, object] = {
-        "email": None,
-    }
-
-    keys = data.keys()
-
-    for line in text.splitlines():
-        line = line.lower().strip()
-        tag, _, content = line.partition(":")
-        if tag == "from":
-            data["email"] = normalize_email(content.strip())
-
-    return data
-
 
 # %% [markdown]
 # qui effettuiamo il preprocessamento
+# le funzioni di preprocaessamento sono scritte nel modulo utils.py
 # %% jupyter={"source_hidden": false}
 #
+
 records = []
 paths = Path("data/cit-HepTh-abstracts").rglob("*")
 for abstractsp in tqdm(paths):
@@ -158,17 +81,17 @@ for abstractsp in tqdm(paths):
             abstract = f.read()
 
         data = {"id": abstractsp.stem}
-        fields = extract_fields(abstract)
+        fields = preproc.extract_fields(abstract)
         if isinstance(fields, dict):
             data.update(fields)
             records.append(data)
 
 papers = pd.DataFrame(records)
 
+# %% [markdown]
+# esegui questo blocco per salvare il preprocessamento
 # %%
-esegui questo blocco per salvare il preprocessamento
 
-# %%
 papers.to_csv(f"data/papers-{session_id}.csv", index=False)
 
 # %%
@@ -195,6 +118,7 @@ ror["tld2"] = ror["clean_url"].str.extract(r"([a-zA-Z0-9-]+\.[a-zA-Z0-9-]+)$")
 
 df = papers.copy()
 
+
 def extract_domain(email):
     if not isinstance(email, str):
         return None
@@ -215,26 +139,17 @@ def extract_domain(email):
 
     if not uni_match.empty:
         row = uni_match.iloc[0]
-        return {
-            "name": row["name"],
-            "country": row["alpha_two_code"]
-        }
+        return {"name": row["name"], "country": row["alpha_two_code"]}
 
     # FALLBACK: ROR via TLD2
     m = re.search(r"([a-zA-Z0-9-]+\.[a-zA-Z0-9-]+)$", domain)
     if m:
         tld2 = m.group(1)
-        ror_match = ror.loc[
-            ror["tld2"].eq(tld2),
-            ["name", "country.country_code"]
-        ]
+        ror_match = ror.loc[ror["tld2"].eq(tld2), ["name", "country.country_code"]]
 
         if not ror_match.empty:
             row = ror_match.iloc[0]
-            return {
-                "name": row["name"],
-                "country": row["country.country_code"]
-            }
+            return {"name": row["name"], "country": row["country.country_code"]}
 
     return None
 
@@ -249,8 +164,7 @@ extract_domain("dbernard@spht.saclay.cea.fr")
 
 # %%
 domain_mapping = {
-    str(row.id): extract_domain(row.email)
-    for row in tqdm(df.itertuples())
+    str(row.id): extract_domain(row.email) for row in tqdm(df.itertuples())
 }
 
 # %%
@@ -258,7 +172,9 @@ domain_mapping["0208160"]
 
 # %%
 ror = pd.read_csv("./data/v1.73-2025-10-28-ror-data.csv")
-ror["clean_url"] = ror["links"].str.replace(r"^https?://", "", regex=True).str.split("/").str[0]
+ror["clean_url"] = (
+    ror["links"].str.replace(r"^https?://", "", regex=True).str.split("/").str[0]
+)
 ror["tld2"] = ror["clean_url"].str.extract(r"([a-zA-Z0-9-]+\.[a-zA-Z0-9-]+)$")
 
 # %%
@@ -274,11 +190,13 @@ def safe_get_name(x):
         return v.get("name")
     return None
 
+
 def safe_get_country(x):
     v = domain_mapping.get(x)
     if isinstance(v, dict):
         return v.get("country")
     return None
+
 
 citations_uni["source"] = citations["source"].astype(str).map(safe_get_name)
 citations_uni["target"] = citations["target"].astype(str).map(safe_get_name)
@@ -327,35 +245,38 @@ for _, row in citations_country.dropna().iterrows():
 
 # %% [markdown]
 # Visualizzazione del grafo
-
 # %%
+
+
+class GLAYOUTS(Enum):
+    kamada: Callable = nx.kamada_kawai_layout
+    spring: Callable = nx.spring_layout
+    circular: Callable = nx.circular_layout
+    shell: Callable = nx.shell_layout
+    spectral: Callable = nx.spectral_layout
+
+
 def gen_graph(
     G,
-    layout="kamada_kawai",
-    figsize=(76.8, 43.2),
+    layout=GLAYOUTS.kamada,
+    figsize: FigSize = FigSize.M1_1,
     dpi=100,
     cmap="viridis",
     save_path="graph.png",
     show_labels=True,
     title=None,
 ):
-    plt.figure(figsize=figsize, dpi=dpi)
+    plt.figure(figsize=figsize, dpi=FigSize.DPI)
+    pos = layout(G)
 
-    # layout dinamico
-    layout_func = {
-        "kamada_kawai": nx.kamada_kawai_layout,
-        "spring": nx.spring_layout,
-        "circular": nx.circular_layout,
-        "shell": nx.shell_layout,
-        "spectral": nx.spectral_layout,
-    }.get(layout, nx.kamada_kawai_layout)
-    
-    pos = layout_func(G)
-    
-    # nodi
     degrees = dict(G.degree())
+    # ci permette di ottenere un dizionario dei degrees
+
     node_sizes = [80 + degrees[n] * 10 for n in G.nodes()]
+    # definisce la grandezza di un nodo in base al valore del degree
+
     node_colors = [degrees[n] for n in G.nodes()]
+    # evidentemente anche il colore
 
     nodes = nx.draw_networkx_nodes(
         G,
