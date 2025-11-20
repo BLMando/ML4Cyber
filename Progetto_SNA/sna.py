@@ -8,7 +8,7 @@
 #       format_version: '1.3'
 #       jupytext_version: 1.18.1
 #   kernelspec:
-#     display_name: Python (data env)
+#     display_name: data
 #     language: python
 #     name: data
 # ---
@@ -171,14 +171,13 @@ papers = pd.read_csv(f"{SESSION_PATH}/papers.csv")
 
 # %% [markdown]
 # Preparazione del grafo
+#
+# G_uni = nx.DiGraph()
+# for _, row in citations_uni.dropna().iterrows():
+#     src = row["source"]
+#     tgt = row["target"]
+#     G_uni.add_edge(src, tgt)
 
-# %%
-G_uni = nx.DiGraph()
-
-for _, row in citations_uni.dropna().iterrows():
-    src = row["source"]
-    tgt = row["target"]
-    G_uni.add_edge(src, tgt)
 # %%
 communities = nx.algorithms.community.louvain_communities(G_uni)
 print(communities)
@@ -206,6 +205,28 @@ for _, row in citations_country.dropna().iterrows():
     tgt = row["target"]
     G_country.add_edge(src, tgt)
 
+
+# %% [markdown]
+# # TESTING
+# %%
+#
+def add_edges(G, df):
+    for _, row in df.dropna().iterrows():
+        G.add_edge(row["source"], row["target"])
+
+
+# %%
+TG_uni_digraph = nx.DiGraph()
+
+# Multiedges are multiple edges between two nodes. Each edge can hold optional data or attributes.
+
+TG_uni_digraph = nx.MultiDiGraph()
+add_edges(TG_uni_digraph, citations_uni)
+
+# %%
+pos = nx.kamada_kawai_layout(TG_uni_digraph, weight="weight")
+data = graphing.gen_default(TG_uni_digraph, pos)
+graphing.plot_graph(data, figsize=FigSize.XE16_9)
 
 # %% [markdown]
 # Visualizzazione del grafo
