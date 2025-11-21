@@ -12,6 +12,7 @@ def PixToInch(width, height, dpi):
 class FigSize(Enum):
     _dpi = 300
     DPI = _dpi
+    AUTO = None
     XXS1_1 = PixToInch(500, 500, _dpi)
     XS1_1 = PixToInch(1000, 1000, _dpi)
     S1_1 = PixToInch(1500, 1500, _dpi)

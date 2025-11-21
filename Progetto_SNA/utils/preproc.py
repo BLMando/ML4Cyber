@@ -97,7 +97,7 @@ def extract_domain(email, ror, universities):
 
     if not uni_match.empty:
         row = uni_match.iloc[0]
-        return {"name": row["name"], "country": row["alpha_two_code"]}
+        return {"name": row["name"].replace('"', ""), "country": row["alpha_two_code"]}
 
     # FALLBACK: ROR via TLD2
     m = re.search(r"([a-zA-Z0-9-]+\.[a-zA-Z0-9-]+)$", domain)
@@ -107,6 +107,9 @@ def extract_domain(email, ror, universities):
 
         if not ror_match.empty:
             row = ror_match.iloc[0]
-            return {"name": row["name"], "country": row["country.country_code"]}
+            return {
+                "name": row["name"].replace('"', ""),
+                "country": row["country.country_code"],
+            }
 
     return None

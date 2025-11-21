@@ -6,6 +6,7 @@
 
 from datetime import datetime
 from pathlib import Path
+from typing import Callable
 from tqdm.notebook import tqdm
 from utils.figsize import FigSize
 import utils.graphing as graphing
@@ -14,6 +15,7 @@ import os
 import pandas as pd
 import utils.preproc as preproc
 import warnings
+import ipdb
 
 
 CITATIONS_DIRECTED_GRAPH = "./data/cit-HepTh.txt"
@@ -28,16 +30,13 @@ warnings.filterwarnings("ignore")
 
 
 
-
-
 s = datetime.now().strftime("%y%m%d%H%M")
 session_id = f"{s}"  # NUOVA SESSIONE
 SESSION_PATH = f"data/sessions/{session_id}"
 os.makedirs(SESSION_PATH, exist_ok=True)
 
 
-
-session_id = "FL9QjSJe-25111938"  # RICARICA UNA SESSIONE
+session_id = "2511212247"  # RICARICA UNA SESSIONE
 SESSION_PATH = f"data/sessions/{session_id}"
 
 
@@ -129,10 +128,8 @@ citations_country.dropna().sample(n=3)
 
 
 
-
 citations_uni.to_csv(f"{SESSION_PATH}/citations-uni.csv", index=False)
 citations_country.to_csv(f"{SESSION_PATH}/citations-country.csv", index=False)
-
 
 
 papers.to_csv(f"{SESSION_PATH}/papers.csv", index=False)
@@ -152,18 +149,13 @@ papers = pd.read_csv(f"{SESSION_PATH}/papers.csv")
 
 
 G_uni = nx.DiGraph()
-
 for _, row in citations_uni.dropna().iterrows():
     src = row["source"]
     tgt = row["target"]
     G_uni.add_edge(src, tgt)
 
 
-
-
-
 communities = nx.algorithms.community.louvain_communities(G_uni)
-print(len(communities))
 
 
 comm_map = {}
@@ -192,6 +184,222 @@ for _, row in citations_country.dropna().iterrows():
 
 
 
+
+
+#
+def add_edges(G, df):
+    for _, row in df.dropna().iterrows():
+        G.add_edge(row["source"], row["target"])
+
+
+def edge_collapse(G, type: Callable = nx.MultiDiGraph):
+    H = type()
+    for u, v in G.edges():
+        if H.has_edge(u, v):
+            H[u][v]["w"] += 1
+        else:
+            H.add_edge(u, v, w=1)
+    return H
+
+
+TG_uni_digraph = nx.DiGraph()
+
+TG_uni_digraph = nx.MultiDiGraph()
+add_edges(TG_uni_digraph, citations_uni)
+pos = nx.kamada_kawai_layout(TG_uni_digraph, weight="weight")
+data = graphing.gen_default(TG_uni_digraph, pos)
+graphing.plot_graph(data, figsize=FigSize.XE16_9)
+
+
+
+
+
+# Source - https://stackoverflow.com/a/437591
+# Posted by cdleary, modified by community. See post 'Timeline' for change history
+# Retrieved 2025-11-21, License - CC BY-SA 4.0
+from importlib import reload  # Python 3.4+
+graphing = reload(graphing)
+name = "circular"
+pg = nx.DiGraph()
+add_edges(pg, citations_uni)
+wpg = edge_collapse(pg, nx.DiGraph)
+lay = graphing.GLAYOUTS.circular
+pos = lay(pg)
+data = graphing.gen_graph_data(pg, pos)
+graphing.plot_graph(data, save_path=f"{SESSION_PATH}/{name}")
+
+
+# Source - https://stackoverflow.com/a/437591
+# Posted by cdleary, modified by community. See post 'Timeline' for change history
+# Retrieved 2025-11-21, License - CC BY-SA 4.0
+from importlib import reload  # Python 3.4+
+graphing = reload(graphing)
+name = "graph-arf"
+pg = nx.DiGraph()
+add_edges(pg, citations_uni)
+wpg = edge_collapse(pg, nx.DiGraph)
+lay = graphing.GLAYOUTS.arf
+pos = lay(pg)
+data = graphing.gen_graph_data(pg, pos)
+graphing.plot_graph(data, save_path=f"{SESSION_PATH}/{name}")
+
+
+# Source - https://stackoverflow.com/a/437591
+# Posted by cdleary, modified by community. See post 'Timeline' for change history
+# Retrieved 2025-11-21, License - CC BY-SA 4.0
+from importlib import reload  # Python 3.4+
+graphing = reload(graphing)
+name = "graph-bfs"
+
+pg = nx.DiGraph()
+add_edges(pg, citations_uni)
+wpg = edge_collapse(pg, nx.DiGraph)
+lay = graphing.GLAYOUTS.bipartite
+pos = lay(pg)
+data = graphing.gen_default(pg, pos)
+graphing.plot_graph(data, save_path=f"{SESSION_PATH}/{name}")
+
+
+# Source - https://stackoverflow.com/a/437591
+# Posted by cdleary, modified by community. See post 'Timeline' for change history
+# Retrieved 2025-11-21, License - CC BY-SA 4.0
+from importlib import reload  # Python 3.4+
+graphing = reload(graphing)
+name = "graph-bfs"
+pg = nx.DiGraph()
+add_edges(pg, citations_uni)
+wpg = edge_collapse(pg, nx.DiGraph)
+lay = graphing.GLAYOUTS.bfs
+pos = lay(pg)
+data = graphing.gen_default(pg, pos)
+graphing.plot_graph(data, save_path=f"{SESSION_PATH}/{name}")
+
+
+# Source - https://stackoverflow.com/a/437591
+# Posted by cdleary, modified by community. See post 'Timeline' for change history
+# Retrieved 2025-11-21, License - CC BY-SA 4.0
+from importlib import reload  # Python 3.4+
+graphing = reload(graphing)
+name = "kamada"
+pg = nx.DiGraph()
+add_edges(pg, citations_uni)
+wpg = edge_collapse(pg, nx.DiGraph)
+lay = graphing.GLAYOUTS.kamada
+pos = lay(pg, weigth="w")
+data = graphing.gen_default(pg, pos)
+graphing.plot_graph(data, save_path=f"{SESSION_PATH}/{name}")
+
+
+# Source - https://stackoverflow.com/a/437591
+# Posted by cdleary, modified by community. See post 'Timeline' for change history
+# Retrieved 2025-11-21, License - CC BY-SA 4.0
+from importlib import reload  # Python 3.4+
+graphing = reload(graphing)
+name = "planar"
+pg = nx.DiGraph()
+add_edges(pg, citations_uni)
+wpg = edge_collapse(pg, nx.DiGraph)
+lay = graphing.GLAYOUTS.planar
+pos = lay(pg)
+data = graphing.gen_default(pg, pos)
+graphing.plot_graph(data, save_path=f"{SESSION_PATH}/{name}")
+
+
+# Source - https://stackoverflow.com/a/437591
+# Posted by cdleary, modified by community. See post 'Timeline' for change history
+# Retrieved 2025-11-21, License - CC BY-SA 4.0
+from importlib import reload  # Python 3.4+
+graphing = reload(graphing)
+name = "spring-base"
+pg = nx.DiGraph()
+add_edges(pg, citations_uni)
+wpg = edge_collapse(pg, nx.DiGraph)
+lay = graphing.GLAYOUTS.spring
+pos = lay(pg, weight="w")
+data = graphing.gen_graph_data(pg, pos)
+graphing.plot_graph(data, save_path=f"{SESSION_PATH}/{name}")
+
+
+# Source - https://stackoverflow.com/a/437591
+# Posted by cdleary, modified by community. See post 'Timeline' for change history
+# Retrieved 2025-11-21, License - CC BY-SA 4.0
+from importlib import reload  # Python 3.4+
+graphing = reload(graphing)
+name = "spring-force"
+pg = nx.DiGraph()
+add_edges(pg, citations_uni)
+wpg = edge_collapse(pg, nx.DiGraph)
+lay = graphing.GLAYOUTS.spring
+pos = lay(pg, weight="w", method="force")
+data = graphing.gen_graph_data(pg, pos)
+graphing.plot_graph(data, save_path=f"{SESSION_PATH}/{name}")
+
+
+# Source - https://stackoverflow.com/a/437591
+# Posted by cdleary, modified by community. See post 'Timeline' for change history
+# Retrieved 2025-11-21, License - CC BY-SA 4.0
+from importlib import reload  # Python 3.4+
+graphing = reload(graphing)
+name = "spring-energy"
+pg = nx.DiGraph()
+add_edges(pg, citations_uni)
+wpg = edge_collapse(pg, nx.DiGraph)
+lay = graphing.GLAYOUTS.spring
+pos = lay(pg, weight="w", method="energy")
+data = graphing.gen_graph_data(pg, pos)
+graphing.plot_graph(data, save_path=f"{SESSION_PATH}/{name}", show_labels=False)
+
+
+# Source - https://stackoverflow.com/a/437591
+# Posted by cdleary, modified by community. See post 'Timeline' for change history
+# Retrieved 2025-11-21, License - CC BY-SA 4.0
+from importlib import reload  # Python 3.4+
+graphing = reload(graphing)
+name = "spiral"
+pg = nx.DiGraph()
+add_edges(pg, citations_uni)
+wpg = edge_collapse(pg, nx.DiGraph)
+lay = graphing.GLAYOUTS.spiral
+pos = lay(pg, resolution=1)
+data = graphing.gen_graph_data(pg, pos)
+graphing.plot_graph(data, save_path=f"{SESSION_PATH}/{name}")
+
+
+# Source - https://stackoverflow.com/a/437591
+# Posted by cdleary, modified by community. See post 'Timeline' for change history
+# Retrieved 2025-11-21, License - CC BY-SA 4.0
+from importlib import reload  # Python 3.4+
+graphing = reload(graphing)
+name = "spiral-equidistant"
+pg = nx.DiGraph()
+add_edges(pg, citations_uni)
+wpg = edge_collapse(pg, nx.DiGraph)
+lay = graphing.GLAYOUTS.spiral
+pos = lay(pg, resolution=1, equidistant=True)
+data = graphing.gen_graph_data(pg, pos)
+graphing.plot_graph(data, save_path=f"{SESSION_PATH}/{name}")
+
+
+
+
+
+unique = len(pd.unique(citations_uni[['source', 'target']].dropna().values.ravel('K')))
+self_loops = len(citations_uni[citations_uni['source'] == citations_uni["target"]].dropna())
+edges = len(citations_uni.dropna())
+print(f"Abbiamo {unique} universita e centri di ricerca")
+print(f"        {edges} archi")
+print(f"        {self_loops} self loops")
+
+
+unique = len(pd.unique(citations_country[['source', 'target']].dropna().values.ravel('K')))
+self_loops = len(citations_country[citations_country['source'] == citations_country["target"]].dropna())
+edges = len(citations_country.dropna())
+print(f"Abbiamo {unique} stati")
+print(f"        {edges} archi")
+print(f"        {self_loops} self loops")
+
+
+citations_uni.count()
 
 
 
