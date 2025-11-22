@@ -2,7 +2,6 @@ from enum import Enum
 from dataclasses import dataclass
 
 from numpy import log
-from utils.figsize import FigSize
 from typing import Callable
 import networkx as nx
 import matplotlib.pyplot as plt
@@ -56,9 +55,9 @@ class FigSize(Enum):
 class GLAYOUTS(Enum):
     arf: Callable = nx.arf_layout
     bipartite: Callable = nx.bipartite_layout
-    bfs: Callable = nx.bfs_layout
+    # bfs: Callable = nx.bfs_layout
     circular: Callable = nx.circular_layout
-    forceatlas2: Callable = nx.forceatlas2_layout
+    # forceatlas2: Callable = nx.forceatlas2_layout
     kamada: Callable = nx.kamada_kawai_layout
     planar: Callable = nx.planar_layout
     random: Callable = nx.random_layout
