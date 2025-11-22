@@ -19,14 +19,14 @@
 # dei gruppi naturali (comunità) tra i diversi istituti di ricerca nel campo della Energia.
 # %%
 # Importiamo tutte le dipendenze
-#
 
+from importlib import reload
 from datetime import datetime
 from pathlib import Path
-from typing import Callable
 from tqdm.notebook import tqdm
-from utils.figsize import FigSize
+from utils.graphing import FigSize, GLAYOUTS
 import utils.graphing as graphing
+import utils.metrics as metrics
 import networkx as nx
 import os
 import pandas as pd
@@ -66,7 +66,6 @@ SESSION_PATH = f"data/sessions/{session_id}"
 #
 # citations contiene il grafo diretto con colonne target e source
 # %% jupyter={"source_hidden": false}
-
 records = []
 
 for abp in tqdm(Path(CITATIONS_ABSTRACTS_DIR).rglob("*")):
@@ -167,79 +166,24 @@ citations_country = pd.read_csv(f"{SESSION_PATH}/citations-country.csv")
 papers = pd.read_csv(f"{SESSION_PATH}/papers.csv")
 
 # %% [markdown]
-# Preparazione del grafo
+# # Grafi
 
 # %%
-G_uni = nx.DiGraph()
-for _, row in citations_uni.dropna().iterrows():
-    src = row["source"]
-    tgt = row["target"]
-    G_uni.add_edge(src, tgt)
+# per testing e sviluppo delle librerire, rilanciare questo blocco ogni volta che viene
+# aggiornata una libreria
 
-# %%
-communities = nx.algorithms.community.louvain_communities(G_uni)
-# %% jupyter={"outputs_hidden": true}
-comm_map = {}
-for i, cset in enumerate(communities):
-    for n in cset:
-        comm_map[n] = i
-
-H = nx.DiGraph()
-for u, v in G_uni.edges():
-    w = 1
-    if G_uni.has_edge(v, u):
-        w = 2
-    H.add_edge(u, v, weight=w)
-
-pos = nx.spring_layout(H, weight="weight", iterations=300)
-data = graphing.gen_default(H, pos)
-graphing.plot_graph(data, figsize=FigSize.XE16_9)
-# %%
-G_country = nx.DiGraph()
-
-for _, row in citations_country.dropna().iterrows():
-    src = row["source"]
-    tgt = row["target"]
-    G_country.add_edge(src, tgt)
+# Source - https://stackoverflow.com/a/437591
+# Posted by cdleary, modified by community. See post 'Timeline' for change history
+# Retrieved 2025-11-21, License - CC BY-SA 4.0
 
 
-# %% [markdown]
-# # TESTING
-# %%
-#
-def add_edges(G, df):
-    for _, row in df.dropna().iterrows():
-        G.add_edge(row["source"], row["target"])
+graphing = reload(graphing)
 
-
-def edge_collapse(G, type: Callable = nx.MultiDiGraph):
-    H = type()
-    for u, v in G.edges():
-        if H.has_edge(u, v):
-            H[u][v]["w"] += 1
-        else:
-            H.add_edge(u, v, w=1)
-    return H
-
-
-# %%
-TG_uni_digraph = nx.DiGraph()
-
-TG_uni_digraph = nx.MultiDiGraph()
-add_edges(TG_uni_digraph, citations_uni)
-pos = nx.kamada_kawai_layout(TG_uni_digraph, weight="weight")
-data = graphing.gen_default(TG_uni_digraph, pos)
-graphing.plot_graph(data, figsize=FigSize.XE16_9)
 
 # %% [markdown]
 # ## Circular Layout
 
 # %%
-# Source - https://stackoverflow.com/a/437591
-# Posted by cdleary, modified by community. See post 'Timeline' for change history
-# Retrieved 2025-11-21, License - CC BY-SA 4.0
-from importlib import reload  # Python 3.4+
-graphing = reload(graphing)
 name = "circular-wpg"
 pg = nx.DiGraph()
 add_edges(pg, citations_uni)
@@ -248,6 +192,9 @@ lay = graphing.GLAYOUTS.circular
 pos = lay(wpg)
 data = graphing.gen_graph_data(wpg, pos)
 graphing.plot_graph(data, save_path=f"{SESSION_PATH}/{name}")
+
+# %% [markdown]
+# ## ARF Layout
 
 # %%
 # Source - https://stackoverflow.com/a/437591
@@ -264,7 +211,7 @@ pos = lay(wpg)
 data = graphing.gen_graph_data(wpg, pos)
 graphing.plot_graph(data, save_path=f"{SESSION_PATH}/{name}")
 
-# %% jupyter={"outputs_hidden": true, "source_hidden": true}
+# %% jupyter={"source_hidden": true}
 # Source - https://stackoverflow.com/a/437591
 # Posted by cdleary, modified by community. See post 'Timeline' for change history
 # Retrieved 2025-11-21, License - CC BY-SA 4.0
@@ -310,7 +257,7 @@ pos = lay(wpg, weight="w")
 data = graphing.gen_graph_data(wpg, pos)
 graphing.plot_graph(data, save_path=f"{SESSION_PATH}/{name}")
 
-# %% jupyter={"outputs_hidden": true, "source_hidden": true}
+# %% jupyter={"source_hidden": true}
 # Source - https://stackoverflow.com/a/437591
 # Posted by cdleary, modified by community. See post 'Timeline' for change history
 # Retrieved 2025-11-21, License - CC BY-SA 4.0
@@ -370,7 +317,7 @@ pos = lay(wpg, weight="w", method="energy")
 data = graphing.gen_graph_data(wpg, pos)
 graphing.plot_graph(data, save_path=f"{SESSION_PATH}/{name}", show_labels=False)
 
-# %% jupyter={"outputs_hidden": true, "source_hidden": true}
+# %% jupyter={"source_hidden": true}
 # Source - https://stackoverflow.com/a/437591
 # Posted by cdleary, modified by community. See post 'Timeline' for change history
 # Retrieved 2025-11-21, License - CC BY-SA 4.0
@@ -385,7 +332,7 @@ pos = lay(pg, resolution=1)
 data = graphing.gen_graph_data(pg, pos)
 graphing.plot_graph(data, save_path=f"{SESSION_PATH}/{name}")
 
-# %% jupyter={"outputs_hidden": true, "source_hidden": true}
+# %% jupyter={"source_hidden": true}
 # Source - https://stackoverflow.com/a/437591
 # Posted by cdleary, modified by community. See post 'Timeline' for change history
 # Retrieved 2025-11-21, License - CC BY-SA 4.0
@@ -421,31 +368,33 @@ print(f"        {self_loops} self loops")
 # %%
 citations_uni.count()
 
+# %% [markdown]
+# ## Metriche
+#
+# Qua calcoliamo:
+# - closeness centrality
+# - degree centrality
+# - betweenness centrality
+# - eigenvector centrality
+
+# %% [markdown]
+# ### Definizione funzioni
+
+# %%
+
+# %% [markdown]
+# ### Calcolo Metriche
+
 # %%
 g = nx.DiGraph()
 add_edges(g, citations_uni)
 wg = g.copy()
 wg = edge_collapse(g, nx.DiGraph)
 
-def metrics(G):
-    closeness = nx.closeness_centrality(G)
-    degree = nx.degree_centrality(G)
-    betweenness = nx.betweenness_centrality(G)
-    eigenvector = nx.eigenvector_centrality(G)
-    return (closeness, degree, betweenness, eigenvector)
-    
+# %%
 wgm = metrics(wg)
 gm  = metrics(g)
 
 # %%
-import matplotlib.pyplot as plt
-
-plt.figure()
-plt.bar(, [gm[0][n] for n in gm[0]])
-plt.title("Closeness Centrality")
-plt.xlabel("Node")
-plt.ylabel("Value")
-plt.tight_layout()
-plt.show()
 
 # %%
