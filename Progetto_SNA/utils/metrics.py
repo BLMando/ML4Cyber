@@ -24,7 +24,7 @@ def plot_distribution(values, path, title, scale):
     #plt.xticks(rotation=80, fontsize=8, ax=ax)
     ax.set_ylabel("Numero Università", fontsize=11)
     #ax.xlabel("Centralità", fontsize=11)
-    print("Mean:", np.mean(values))
+
     ax.axvline(x=np.mean(values), color='red', ls='--', lw=2, label='Media')
     ax.set_title(title, fontsize=12)
     ax.legend(loc='upper right')#bbox_to_anchor=(1.0, 1), 
