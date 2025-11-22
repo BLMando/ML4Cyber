@@ -201,6 +201,7 @@ graphing.plot_graph(data, save_path=f"{SESSION_PATH}/{name}")
 # Posted by cdleary, modified by community. See post 'Timeline' for change history
 # Retrieved 2025-11-21, License - CC BY-SA 4.0
 from importlib import reload  # Python 3.4+
+
 graphing = reload(graphing)
 name = "graph-arf-wpg"
 pg = nx.DiGraph()
@@ -216,6 +217,7 @@ graphing.plot_graph(data, save_path=f"{SESSION_PATH}/{name}")
 # Posted by cdleary, modified by community. See post 'Timeline' for change history
 # Retrieved 2025-11-21, License - CC BY-SA 4.0
 from importlib import reload  # Python 3.4+
+
 graphing = reload(graphing)
 name = "graph-bfs"
 
@@ -232,6 +234,7 @@ graphing.plot_graph(data, save_path=f"{SESSION_PATH}/{name}")
 # Posted by cdleary, modified by community. See post 'Timeline' for change history
 # Retrieved 2025-11-21, License - CC BY-SA 4.0
 from importlib import reload  # Python 3.4+
+
 graphing = reload(graphing)
 name = "graph-bfs"
 pg = nx.DiGraph()
@@ -247,6 +250,7 @@ graphing.plot_graph(data, save_path=f"{SESSION_PATH}/{name}")
 # Posted by cdleary, modified by community. See post 'Timeline' for change history
 # Retrieved 2025-11-21, License - CC BY-SA 4.0
 from importlib import reload  # Python 3.4+
+
 graphing = reload(graphing)
 name = "kamada-wpg"
 pg = nx.DiGraph()
@@ -262,6 +266,7 @@ graphing.plot_graph(data, save_path=f"{SESSION_PATH}/{name}")
 # Posted by cdleary, modified by community. See post 'Timeline' for change history
 # Retrieved 2025-11-21, License - CC BY-SA 4.0
 from importlib import reload  # Python 3.4+
+
 graphing = reload(graphing)
 name = "planar"
 pg = nx.DiGraph()
@@ -277,6 +282,7 @@ graphing.plot_graph(data, save_path=f"{SESSION_PATH}/{name}")
 # Posted by cdleary, modified by community. See post 'Timeline' for change history
 # Retrieved 2025-11-21, License - CC BY-SA 4.0
 from importlib import reload  # Python 3.4+
+
 graphing = reload(graphing)
 name = "spring-base-wpg"
 pg = nx.DiGraph()
@@ -292,6 +298,7 @@ graphing.plot_graph(data, save_path=f"{SESSION_PATH}/{name}")
 # Posted by cdleary, modified by community. See post 'Timeline' for change history
 # Retrieved 2025-11-21, License - CC BY-SA 4.0
 from importlib import reload  # Python 3.4+
+
 graphing = reload(graphing)
 name = "spring-force-wpg"
 pg = nx.DiGraph()
@@ -307,6 +314,7 @@ graphing.plot_graph(data, save_path=f"{SESSION_PATH}/{name}")
 # Posted by cdleary, modified by community. See post 'Timeline' for change history
 # Retrieved 2025-11-21, License - CC BY-SA 4.0
 from importlib import reload  # Python 3.4+
+
 graphing = reload(graphing)
 name = "spring-energy-wpg"
 pg = nx.DiGraph()
@@ -322,6 +330,7 @@ graphing.plot_graph(data, save_path=f"{SESSION_PATH}/{name}", show_labels=False)
 # Posted by cdleary, modified by community. See post 'Timeline' for change history
 # Retrieved 2025-11-21, License - CC BY-SA 4.0
 from importlib import reload  # Python 3.4+
+
 graphing = reload(graphing)
 name = "spiral"
 pg = nx.DiGraph()
@@ -337,6 +346,7 @@ graphing.plot_graph(data, save_path=f"{SESSION_PATH}/{name}")
 # Posted by cdleary, modified by community. See post 'Timeline' for change history
 # Retrieved 2025-11-21, License - CC BY-SA 4.0
 from importlib import reload  # Python 3.4+
+
 graphing = reload(graphing)
 name = "spiral-equidistant"
 pg = nx.DiGraph()
@@ -350,16 +360,24 @@ graphing.plot_graph(data, save_path=f"{SESSION_PATH}/{name}")
 # %% [markdown]
 # Visualizzazione del grafo
 # %%
-unique = len(pd.unique(citations_uni[['source', 'target']].dropna().values.ravel('K')))
-self_loops = len(citations_uni[citations_uni['source'] == citations_uni["target"]].dropna())
+unique = len(pd.unique(citations_uni[["source", "target"]].dropna().values.ravel("K")))
+self_loops = len(
+    citations_uni[citations_uni["source"] == citations_uni["target"]].dropna()
+)
 edges = len(citations_uni.dropna())
 print(f"Abbiamo {unique} universita e centri di ricerca")
 print(f"        {edges} archi")
 print(f"        {self_loops} self loops")
 
 # %%
-unique = len(pd.unique(citations_country[['source', 'target']].dropna().values.ravel('K')))
-self_loops = len(citations_country[citations_country['source'] == citations_country["target"]].dropna())
+unique = len(
+    pd.unique(citations_country[["source", "target"]].dropna().values.ravel("K"))
+)
+self_loops = len(
+    citations_country[
+        citations_country["source"] == citations_country["target"]
+    ].dropna()
+)
 edges = len(citations_country.dropna())
 print(f"Abbiamo {unique} stati")
 print(f"        {edges} archi")
@@ -393,7 +411,7 @@ wg = edge_collapse(g, nx.DiGraph)
 
 # %%
 wgm = metrics(wg)
-gm  = metrics(g)
+gm = metrics(g)
 
 # %%
 
